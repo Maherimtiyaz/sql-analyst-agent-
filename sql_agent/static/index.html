@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL Analyst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f4f6f7; --panel:#fff; --fg:#14191d; --muted:#5b6670; --line:#d8dee2; --soft:#eef2f3;
+  --accent:#0d7a6f; --accent-soft:#e0f2ef; --ok:#1f8a4c; --err:#c2412d; --err-soft:#fbe9e5;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0f1316; --panel:#161c20; --fg:#e4e9ec; --muted:#93a0a9; --line:#2a3238; --soft:#1c2429;
+  --accent:#3cc4b3; --accent-soft:#12302c; --ok:#4cc982; --err:#ff8a73; --err-soft:#3a1d18; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.35rem;margin:0;letter-spacing:-.01em}
+h1 span{color:var(--muted);font-weight:400}
+.pill{font:500 .75rem var(--mono);padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
+.pill.run{color:var(--accent);border-color:var(--accent)}
+.pill.err{color:var(--err);border-color:var(--err)}
+.banner{background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:9px 14px;font-size:.88rem}
+form{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg)}
+input[type=text]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-weight:600;padding:0 20px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+button:disabled{opacity:.55;cursor:default}
+button:focus-visible,.ex:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.examples{display:flex;flex-wrap:wrap;gap:6px}
+.ex{text-align:left;font:inherit;font-size:.82rem;font-weight:400;padding:5px 11px;border-radius:999px;background:var(--panel);color:var(--fg);border:1px solid var(--line)}
+.ex:hover{border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h2{font-size:.72rem;font-family:var(--mono);font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.empty{color:var(--muted);font-size:.92rem}
+.answer p{margin:0 0 8px}
+.answer p:first-child{font-size:1.12rem;font-weight:600}
+details{border:1px solid var(--line);border-radius:8px}
+summary{cursor:pointer;padding:8px 12px;font-size:.85rem;color:var(--muted)}
+pre{font-variant-ligatures:none;font-feature-settings:"calt" 0,"liga" 0;margin:0;padding:12px;overflow-x:auto;font:.8rem/1.5 var(--mono);background:var(--soft);border-radius:0 0 8px 8px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:500 .72rem var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--soft)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;font:.78rem var(--mono);color:var(--muted)}
+.meta a{color:var(--accent)}
+.error{background:var(--err-soft);color:var(--err);border-radius:8px;padding:10px 12px;font-size:.9rem}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:.88rem}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:2px;display:grid;place-items:center;font-size:.65rem;font-weight:700}
+.step.pending .dot{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
+.step.ok .dot{border-color:var(--ok);color:var(--ok)}
+.step.fail .dot{border-color:var(--err);color:var(--err)}
+.step.note .dot{border-style:dashed}
+.step .title{font-weight:500}
+.step .sub{color:var(--muted);font-size:.8rem;overflow-wrap:anywhere}
+.step .sub.err{color:var(--err)}
+.step.note .title{font-weight:400;font-style:italic;color:var(--muted)}
+.step details{margin-top:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.step.pending .dot{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>SQL Analyst <span>· ask the shop database anything</span></h1>
+    <span class="pill" id="status">idle</span>
+  </header>
+  <div class="banner" id="demo" hidden>Demo mode: the model's decisions are replayed from a script (every question gets the March 2026 category run). Tools, SQL and data are real. Restart without <code>SQL_AGENT_DEMO=1</code> to use the live model.</div>
+
+  <form id="form">
+    <label for="q" class="sr" hidden>Question</label>
+    <input type="text" id="q" placeholder="e.g. Which product category made the most revenue in March 2026?" autocomplete="off" required minlength="3">
+    <button type="submit" id="go">Ask</button>
+  </form>
+  <div class="examples" id="examples"></div>
+
+  <div class="grid">
+    <section class="panel" aria-live="polite">
+      <h2>Answer</h2>
+      <div id="answer"><p class="empty">Ask about customers, orders, products or revenue. The answer, the result table and the SQL behind it appear here.</p></div>
+    </section>
+    <section class="panel">
+      <h2>What the agent is doing</h2>
+      <ol class="steps" id="steps"><li class="empty">Each step shows up here as it happens: reading the schema, running SQL, fixing errors.</li></ol>
+    </section>
+  </div>
+</div>
+
+<script>
+const EXAMPLES = [
+  "Which product category made the most revenue in March 2026?",
+  "What was revenue in Q1 2026, in dollars?",
+  "How many customers have never placed an order?",
+  "What is the average order value for completed orders?",
+  "What is the email address of customer 1?"
+];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stepsEl = $("steps"), answerEl = $("answer"), statusEl = $("status"), goBtn = $("go");
+const items = {};
+
+$("examples").innerHTML = EXAMPLES.map(e => `<button type="button" class="ex">${esc(e)}</button>`).join("");
+$("examples").addEventListener("click", e => {
+  if (e.target.classList.contains("ex")) { $("q").value = e.target.textContent; ask(); }
+});
+$("form").addEventListener("submit", e => { e.preventDefault(); ask(); });
+fetch("/health").then(r => r.json()).then(h => { $("demo").hidden = !h.demo; statusEl.textContent = h.model; }).catch(() => {});
+
+function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = "pill " + (cls || ""); }
+
+function label(name, args) {
+  if (name === "list_tables") return "Listing tables";
+  if (name === "describe_table") return `Reading schema of ${args.table}`;
+  if (name === "run_sql") return args.purpose || "Running SQL";
+  return name;
+}
+function detail(ev) {
+  const p = ev.preview || {};
+  if (ev.name === "list_tables") return `${p.tables.length} tables: ${p.tables.join(", ")}`;
+  if (ev.name === "describe_table") return `${p.columns.length} columns: ${p.columns.join(", ")}`;
+  if (ev.name === "run_sql") return `${p.row_count} row${p.row_count === 1 ? "" : "s"}${p.truncated ? " (more not shown)" : ""} · ${p.elapsed_ms} ms`;
+  return "";
+}
+
+function addItem(html, cls, id) {
+  if (stepsEl.querySelector(".empty")) stepsEl.innerHTML = "";
+  const li = document.createElement("li");
+  li.className = "step " + cls; li.innerHTML = html;
+  stepsEl.appendChild(li);
+  if (id) items[id] = li;
+  return li;
+}
+
+function handle(ev) {
+  if (ev.type === "model") {
+    setStatus(`running · step ${ev.step}`, "run");
+    if (ev.text && ev.stop_reason === "tool_use")
+      addItem(`<span class="dot"></span><div><div class="title">“${esc(ev.text)}”</div></div>`, "note");
+  } else if (ev.type === "tool_call") {
+    const sql = ev.name === "run_sql" ? `<details><summary>SQL</summary><pre>${esc(ev.args.sql)}</pre></details>` : "";
+    addItem(`<span class="dot"></span><div><div class="title">${esc(label(ev.name, ev.args))}</div><div class="sub">working…</div>${sql}</div>`, "pending", ev.id);
+  } else if (ev.type === "tool_result") {
+    const li = items[ev.id]; if (!li) return;
+    li.className = "step " + (ev.ok ? "ok" : "fail");
+    li.querySelector(".dot").textContent = ev.ok ? "✓" : "!";
+    const sub = li.querySelector(".sub");
+    if (ev.ok) sub.textContent = detail(ev);
+    else { sub.className = "sub err"; sub.textContent = ev.error + " → the agent will retry"; }
+  } else if (ev.type === "done") {
+    setStatus(ev.status, ev.status === "completed" ? "" : "err");
+    renderAnswer(ev);
+  } else if (ev.type === "error") {
+    setStatus("failed", "err");
+    answerEl.innerHTML = `<div class="error">${esc(ev.message)}</div>`;
+    addItem(`<span class="dot">!</span><div><div class="title">Run stopped</div><div class="sub err">${esc(ev.message)}</div></div>`, "fail");
+  }
+}
+
+function renderAnswer(ev) {
+  const parts = ev.answer.split(/```sql\n?([\s\S]*?)```/);
+  const prose = parts.filter((_, i) => i % 2 === 0).join("\n").trim();
+  const sql = parts.filter((_, i) => i % 2 === 1).map(s => s.trim()).join("\n\n");
+  let html = `<div class="answer">${prose.split(/\n+/).filter(Boolean).map(l => `<p>${esc(l)}</p>`).join("")}</div>`;
+  const t = ev.table;
+  if (t && t.columns && t.rows.length && ev.status === "completed") {
+    const isNum = v => typeof v === "number";
+    const fmt = v => Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const numCol = t.columns.map((_, j) => t.rows.every(r => r[j] === null || isNum(r[j])));
+    html += `<div class="tbl"><table><thead><tr>${t.columns.map((c, j) => `<th class="${numCol[j] ? "num" : ""}">${esc(c)}</th>`).join("")}</tr></thead><tbody>` +
+      t.rows.map(r => `<tr>${r.map((v, j) => `<td class="${numCol[j] ? "num" : ""}">${esc(isNum(v) ? fmt(v) : v)}</td>`).join("")}</tr>`).join("") +
+      `</tbody></table></div>`;
+  }
+  if (sql) html += `<details><summary>Show the SQL behind this answer</summary><pre>${esc(sql)}</pre></details>`;
+  html += `<div class="meta"><span>${ev.steps} steps</span><span>${ev.input_tokens.toLocaleString()} in / ${ev.output_tokens.toLocaleString()} out tokens</span><span>${(ev.duration_ms / 1000).toFixed(1)} s</span><a href="/runs/${esc(ev.run_id)}" target="_blank" rel="noopener">full trace (run ${esc(ev.run_id)})</a></div>`;
+  answerEl.innerHTML = html;
+}
+
+async function ask() {
+  const question = $("q").value.trim();
+  if (question.length < 3) return;
+  goBtn.disabled = true; setStatus("starting…", "run");
+  stepsEl.innerHTML = ""; answerEl.innerHTML = `<p class="empty">Working on it…</p>`;
+  try {
+    const res = await fetch("/ask/stream", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({question})});
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ? JSON.stringify(body.detail) : `HTTP ${res.status}`);
+    }
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i;
+      while ((i = buf.indexOf("\n\n")) >= 0) {
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        const data = chunk.split("\n").filter(l => l.startsWith("data: ")).map(l => l.slice(6)).join("\n");
+        if (data) handle(JSON.parse(data));
+      }
+    }
+  } catch (err) {
+    handle({type: "error", message: "Couldn't reach the agent: " + err.message});
+  } finally {
+    goBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
